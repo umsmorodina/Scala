@@ -1,5 +1,8 @@
 import java.util.Date
+
 import shapeless._
+
+import scala.util.Try
 
 class PollWorker() {
 
@@ -54,6 +57,7 @@ class PollWorker() {
 
   def beginPoll(id: Int, userId: Int): String =
     if (!PollRepository.isContains(id)) "ERROR BY ID - NOT BEGIN!"
+    else if (CurrentPolls.isContains(userId)) "ERROR BY BEGIN ANOTHER POLL - NOT BEGIN!"
     else if (!PollRepository.get(id).get.launch) "ERROR BY NOT LAUNCH - NOT BEGIN!"
     else {
       CurrentPolls.store(id, userId)
@@ -91,17 +95,27 @@ class PollWorker() {
     else "ERROR BY NOT BEGIN - NOT DELETE QUESTION!"
 
 
-  def answer(answer: String, number: Int, userId: Int): String =
-    if (CurrentPolls.isContains(userId)) {
-      val oldPoll = CurrentPolls.get(userId).get
+  def answer(answer: String, number: Int, user : User): String =
+    if (CurrentPolls.isContains(user.id)) {
+      val oldPoll = CurrentPolls.get(user.id).get
       if (oldPoll.questions.contains(number)) {
-        if (!oldPoll.isPassedByUser(number, userId)) {
-          val modifiedPoll = oldPoll.answer(answer, number, userId)(oldPoll)
-          if (modifiedPoll._2 == "ANSWER OK!") {
-            PollRepository.store(modifiedPoll._1)
-            CurrentPolls.store(modifiedPoll._1.id, userId)
+        if (!oldPoll.isPassedByUser(number, user)) {
+          val possibleAnsw = answer.split(" ")
+          val answ = if (oldPoll.questions.get(number).get.qType == "open") Right(Left(answer))
+          else {
+            val ints = (for (a <- possibleAnsw) yield if (Try(a.toInt).isSuccess) a.toInt else -1).toList
+            if (ints.filter(a => a != -1).length == possibleAnsw.length) Right(Right(ints))
+            else Left(Left())
           }
-          modifiedPoll._2
+          if (answ.isLeft) "ERROR BY NOT IND NUMBER - NOT ANSWER"
+          else {
+            val modifiedPoll = oldPoll.answer(answ.getOrElse(Left("")), number, user)(oldPoll)
+            if (modifiedPoll._2 == "ANSWER OK!") {
+              PollRepository.store(modifiedPoll._1)
+              CurrentPolls.store(modifiedPoll._1.id, user.id)
+            }
+            modifiedPoll._2
+          }
         }
         else "ERROR BY POLL ALREADY PASSED - NOT ANSWER!"
       }

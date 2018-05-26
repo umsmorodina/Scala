@@ -9,9 +9,9 @@ object TGInteraction extends App with TelegramBot with Polling with Commands {
   //onCommand('start) { implicit msg => reply("My token is SAFE!") }
 
   override def receiveMessage(msg: Message): Unit = {
-    val parser = new Parser()
     for (text <- msg.text)
-      request(SendMessage(msg.source, parser.mainParser(msg.text.getOrElse(""), msg.from.get.id)))
+      request(SendMessage(msg.source, CommandCreator(msg.text.getOrElse(""),
+        User(msg.from.get.id, msg.from.get.firstName, msg.from.get.lastName.getOrElse(""))).makeCommand()))
   }
 
   TGInteraction.run()
