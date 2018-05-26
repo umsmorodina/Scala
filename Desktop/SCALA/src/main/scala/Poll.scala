@@ -12,6 +12,7 @@ case class Poll(id : Int,
                 launch : Boolean = false,
                 used : Boolean = false,
                 questions: Map[Int, Question] = Map.empty,
+                
                 setOfNumbers : Iterator[Int] = Stream.from(1).iterator) {
 
   def getResult(): String = {
