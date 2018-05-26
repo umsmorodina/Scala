@@ -1,188 +1,92 @@
 import java.text.SimpleDateFormat
 import java.util.Date
 
-import org.scalatest.FunSuite
+import org.scalatest.FlatSpec
 
 
-class CommandTests extends FunSuite {
+class CommandTests extends FlatSpec {
   val PW = new PollWorker
-  val defaultDate : Date = new SimpleDateFormat("HH:mm:ss,yy:MM:dd").parse("00:00:00,11:01:01")
+  val defaultDate: Date = new SimpleDateFormat("HH:mm:ss,yy:MM:dd").parse("00:00:00,11:01:01")
 
-  test("/list at the start is empty") {
-      assertResult("POLLS DON’T EXIST") {PW.list().head}}
-
-  test("/deletePoll don't delete by wrong id"){
-    assertResult("ERROR BY ID - NOT DELETE!") {PW.deletePoll(75, 1)}}
-
-  test("/startPoll don't delete by wrong id"){
-    assertResult("ERROR BY ID - NOT START!") {PW.startPoll(100, 1)}}
-
-  test("/stopPoll don't delete by wrong id"){
-    assertResult("ERROR BY ID - NOT STOP!") {PW.stopPoll(20, 1)}}
-
-  test("/list works for the some poll")
-    { PW.createPoll("FIRST", true, true, None, None, 1)
-      assertResult(List[String]("POLL FIRST HAS ID = 1")) {PW.list}}
-
-  test("/deletePoll does not delete by wrong id")
-    {assertResult("ERROR BY ID - NOT DELETE!") {PW.deletePoll(50, 1)}}
-
-  test("/startPoll start launch poll") {
-    assertResult("START OK!") {PW.startPoll(1, 1)}}
-
-  test("/deletePoll does not delete launch poll") {
-    assertResult("ERROR BY LAUNCH - NOT DELETE!") {PW.deletePoll(1, 1)}}
-
-  test("/stopPoll stop launch poll") {
-    assertResult("STOP OK!") {PW.stopPoll(1, 1)}}
-
-  test("/deletePoll delete usual poll") {
-    PW.createPoll("SECOND", true, true, Some(defaultDate), Some(defaultDate), 1)
-    assertResult("DELETE OK!") {PW.deletePoll(2, 1)}}
-
-  test("/deletePoll delete stopped poll"){
-    assertResult("DELETE OK!") {PW.deletePoll(1, 1)}}
-
-  test("/deletePoll does not delete removed poll")
-    {assertResult("ERROR BY ID - NOT DELETE!") {PW.deletePoll(1, 1)}}
-
-  test("/list is empty if all polls were deleted") {
-    assertResult("POLLS DON’T EXIST") {PW.list().head}}
-
-
-  //Тесты для begin:
-  test("/begin activates some good poll") {
-    assertResult("BEGIN OK!") {
-      PW.createPoll("THIRD", true, true, None, None, 1)
-      PW.startPoll(3, 1)
-      PW.beginPoll(3, 1)
-    }
+  "not start of work with bot" should "be right" in {
+    assertResult("POLLS DON’T EXIST") {PW.list().head}
+    assertResult("ERROR BY ID - NOT DELETE!") {PW.deletePoll(75, 1)}
+    assertResult("ERROR BY ID - NOT START!") {PW.startPoll(100, 1)}
+    assertResult("ERROR BY ID - NOT STOP!") {PW.stopPoll(20, 1)}
   }
 
-  test("/begin does not activate not existed poll") {assertResult("ERROR BY ID - NOT BEGIN!") {
-    PW.beginPoll(4, 1)
-  }}
-
-  test("/begin does not activate not started poll") {assertResult("ERROR BY NOT LAUNCH - NOT BEGIN!") {
-    PW.createPoll("FOURTH", true, true, None, None, 2)
-    PW.beginPoll(4, 1)
-  }}
-
-  test("/begin does not activate stopped poll") {assertResult("ERROR BY NOT LAUNCH - NOT BEGIN!") {
-    PW.stopPoll(4, 1)
-    PW.beginPoll(4, 1)
-  }}
-
-  test("/begin activates some poll from different users") {assertResult("BEGIN OK!") {
-    println(PW.startPoll(4, 2))
-    PW.beginPoll(4, 1)
-  }}
-
-  //Тесты для end:
-  test("/end does not end for not launched poll")
-  {assertResult("ERROR BY NOT BEGIN - NOT END!") {PW.endPoll(3)}}
-
-  test("/end ends some good poll")
-  {assertResult("END OK!") {PW.endPoll(1)}}
-
-
-  //Тесты для add_question:
-  test("/add_question adds first open question") {
-    assertResult("1") {
-      PW.beginPoll(4, 2)
-      PW.addQuestion(2, "first_quest")
-    }
+  "create first poll" should "be right" in {
+    PW.createPoll("FIRST", true, true, None, None, 1)
+    assertResult(List[String]("POLL FIRST HAS ID = 1")) {PW.list}
+    assertResult("START OK!") {PW.startPoll(1, 1)}
+    assertResult("ERROR BY LAUNCH - NOT DELETE!") {PW.deletePoll(1, 1)}
+    assertResult("STOP OK!") {PW.stopPoll(1, 1)}
+    assertResult("DELETE OK!") {PW.deletePoll(1, 1)}
   }
 
-  test("/add_question adds second question with open arg")
-  {assertResult("2") { PW.addQuestion(2, "new quest", "open")}}
-
-  test("/add_question adds third question with choice arg")
-  {assertResult("3")
-  { PW.addQuestion(2, "new quest", "choice", List[String]("a", "b", "c"))}}
-
-  test("/add_question adds fourth question with multi arg")
-  {assertResult("4")
-  { PW.addQuestion(2, "new quest", "multi", List[String]("a", "b", "c"))}}
-
-  test("/add_question does not add question for not launched poll")
-  {assertResult("ERROR BY NOT BEGIN - NOT ADD QUESTION!")
-  { PW.endPoll(2)
-    PW.addQuestion(2, "new quest", "open")}}
-
-  test("/add_question does not add question from simple user")
-  {assertResult("ERROR BY ACCESS - NOT ADD QUESTION!")
-   { PW.beginPoll(4, 1)
-     PW.addQuestion(1, "new quest", "open")}}
+  "next works" should "be right" in {
+    val id = PW.createPoll("SECOND", true, true, Some(defaultDate),
+      Some(defaultDate), 1).toInt
+    assertResult("DELETE OK!") {PW.deletePoll(id, 1)}
+    assertResult("ERROR BY ID - NOT DELETE!") {PW.deletePoll(id + 1, 1)}
+    assertResult("POLLS DON’T EXIST") {PW.list().head}
+  }
 
 
+  "context works" should "be right" in {
+    val id = PW.createPoll("THIRD", true, true, None, None, 1).toInt
+    assertResult("BEGIN OK!") {PW.startPoll(id, 1)
+      PW.beginPoll(id, 1)
+    }
+    assertResult("ERROR BY ID - NOT BEGIN!") {PW.beginPoll(id + 1, 1)}
+    val nextId = PW.createPoll("FOURTH", true, true, None, None, 2).toInt
+    assertResult("END OK!") {PW.endPoll(1)}
+    assertResult("ERROR BY NOT LAUNCH - NOT BEGIN!") {PW.beginPoll(nextId, 1)}
+    assertResult("ERROR BY NOT BEGIN - NOT END!") {PW.endPoll(3)}
 
-  //Тесты для delete_question:
-  test("/delete_question does not delete question for not launched poll")
-  {assertResult("ERROR BY NOT BEGIN - NOT DELETE QUESTION!") {
-    PW.deleteQuestion(1, 2)
-  }}
 
-  test("/delete_question delete some good question")
-  {assertResult("DELETE QUESTION OK!") {
-    PW.beginPoll(4, 2)
-    PW.deleteQuestion(1, 2)
-  }}
+    assertResult("BEGIN OK!") {PW.startPoll(nextId, 2)
+      PW.beginPoll(nextId, 2)}
+    assertResult("1") {PW.addQuestion(2, "first_quest")}
+    assertResult("2") {PW.addQuestion(2, "new quest", "open")}
+    assertResult("3")
+      {PW.addQuestion(2, "new quest", "choice", List[String]("a", "b", "c"))}
+    assertResult("4")
+      {PW.addQuestion(2, "new quest", "multi", List[String]("a", "b", "c"))}
+    assertResult("ERROR BY NOT BEGIN - NOT ADD QUESTION!") {PW.endPoll(2)
+      PW.addQuestion(2, "new quest", "open")}
+    assertResult("ERROR BY ACCESS - NOT ADD QUESTION!") {PW.beginPoll(nextId, 1)
+      PW.addQuestion(1, "new quest", "open")}
 
-  test("/delete_question does not delete question for wrong number of question")
-  {assertResult("ERROR BY POLL DOES NOT HAVE THIS QUESTION - NOT DELETE QUESTION!") {
-    PW.deleteQuestion(10, 2)
-  }}
+    assertResult("ERROR BY NOT BEGIN - NOT DELETE QUESTION!") {PW.deleteQuestion(1, 2)}
+    assertResult("DELETE QUESTION OK!") {PW.beginPoll(nextId, 2)
+      PW.deleteQuestion(1, 2)}
+    assertResult("ERROR BY POLL DOES NOT HAVE THIS QUESTION - NOT DELETE QUESTION!") {
+      PW.deleteQuestion(10, 2)}
+    assertResult("ERROR BY ACCESS - NOT DELETE QUESTION!") {PW.beginPoll(nextId, 1)
+    PW.deleteQuestion(nextId, 1)}
 
-  test("/delete_question does not delete question from simple user")
-  {assertResult("ERROR BY ACCESS - NOT DELETE QUESTION!") {
-    PW.beginPoll(4, 1)
-    PW.deleteQuestion(2, 1)
-  }}
+    val secondUser = User(2, "name", "")
+    assertResult("ERROR BY NOT BEGIN - NOT ANSWER!") {PW.endPoll(2)
+    PW.answer("a", 2, secondUser) }
+    assertResult("ANSWER OK!") {PW.beginPoll(nextId, 2)
+    PW.answer("a", 2, secondUser)}
+    assertResult("ERROR BY POLL ALREADY PASSED - NOT ANSWER!")
+      {PW.answer("a", 2, secondUser)}
+    assertResult("ANSWER OK!") {PW.answer("1", 3, secondUser)}
+    assertResult("ANSWER OK!") {PW.answer("2 3", 4, secondUser)}
 
-  //Тесты для answer:
-  test("/answer does not answer for not launched poll")
-  {assertResult("ERROR BY NOT BEGIN - NOT ANSWER!") {
-    PW.endPoll(2)
-    PW.answer("a", 2, 2) }}
-
-  test("/answer answers for some good quest (open)")
-  {assertResult("ANSWER OK!") {
-    PW.beginPoll(4, 2)
-    PW.answer("a", 2, 2)
-  }}
-
-  test("/answer does not answer for passed question")
-  {assertResult("ERROR BY POLL ALREADY PASSED - NOT ANSWER!")
-  { PW.answer("a", 2, 2) }}
-
-  test("/answer answers for some good quest (choice)")
-  {assertResult("ANSWER OK!") {PW.answer("1", 3, 2)}}
-
-  test("/answer answers for some good quest (multi)")
-  {assertResult("ANSWER OK!") {PW.answer("2 3", 4, 2)}}
-
-  test("/answer answers for some good quest from simple user")
-  {assertResult("ANSWER OK!")
-  { PW.beginPoll(4, 1)
-    PW.answer("b", 2 , 1)}}
-
-  test("/answer does not answer for question with wrong number")
-  {assertResult("ERROR BY POLL DOES NOT HAVE THIS QUESTION - NOT ANSWER!")
-  { PW.answer("b", 8 , 1)}}
-
-  test("/answer does not answer for question (multi) with repetitive numbers")
-  {assertResult("ERROR BY REPETITIVE NUMBERS OF VARIANT - NOT ANSWER!")
-  { PW.answer("1 1", 4, 1)}}
-
-  test("/answer does not answer for question (multi) with wrong number of variant")
-  {assertResult("ERROR BY WRONG NUMBER OF VARIANT - NOT ANSWER!")
-  {PW.answer("9 1", 4, 1)}}
-
-  test("/answer does not answer for question (choice) with wrong number of variant")
-  {assertResult("ERROR BY WRONG NUMBER OF VARIANT - NOT ANSWER!")
-  {PW.answer("9", 3, 1)}}
-
+    val firstUser = User(1, "name", "")
+    assertResult("ANSWER OK!") { PW.beginPoll(nextId, 1)
+      PW.answer("b", 2 , firstUser)}
+    assertResult("ERROR BY POLL DOES NOT HAVE THIS QUESTION - NOT ANSWER!")
+      {PW.answer("b", 8 , firstUser)}
+    assertResult("ERROR BY REPETITIVE NUMBERS OF VARIANT - NOT ANSWER!")
+      {PW.answer("1 1", 4, firstUser)}
+    assertResult("ERROR BY WRONG NUMBER OF VARIANT - NOT ANSWER!")
+      {PW.answer("9 1", 4, firstUser)}
+    assertResult("ERROR BY WRONG NUMBER OF VARIANT - NOT ANSWER!")
+      {PW.answer("9", 3, firstUser)} }
 }
 
 
