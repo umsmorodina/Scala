@@ -1,0 +1,15 @@
+/create_poll (first) (yes) (afterstop)
+
+/create_poll (second) (yes) (afterstop)
+
+/start_poll (1)
+
+/begin (1)
+
+/add_question (ilhl) (multi) (open lok)
+
+/answer (1) (fwfwe)
+
+/delete_poll (1)
+
+/result (2)
